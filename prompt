@@ -1,0 +1,269 @@
+PROJECT BRIEF
+Build a complete, production-quality Flutter Android application called HydroFit — a gym and fitness companion app. It is offline-first, no login, no backend, no cloud. All user data persists locally via SQLite. All exercise/meal content is hardcoded in the app. All exercise GIFs are bundled as Flutter assets.
+
+Target platform: Android only (do not target iOS, web, or desktop).
+Flutter: 3.47.9 stable, Dart 3.x.
+Environment: Windows 11 host, Android SDK 36, physical device or AVD available.
+
+CORE ARCHITECTURE REQUIREMENTS
+No authentication, no backend, no network calls except launching YouTube links via url_launcher.
+
+State management: Use provider (simple, well-documented, appropriate for app this size). Do not introduce Riverpod/Bloc unless the agent has a strong reason.
+
+Local database: sqflite + path. Only the Schedule feature uses the DB. Training and Diet content are hardcoded Dart constants.
+
+Navigation: BottomNavigationBar with 4 persistent tabs: Training, Diet, Schedule, Account. Each tab preserves its scroll state (use IndexedStack or PageStorageKey).
+
+Theming: Support light and dark mode; user selection persisted via shared_preferences.
+
+Notifications: flutter_local_notifications with timezone support (timezone package). Requires core library desugaring enabled in android/app/build.gradle.
+
+Project structure (suggested, agent may refine):
+
+text
+lib/
+├── main.dart
+├── app.dart
+├── data/
+│   ├── models/            (Exercise, Meal, ScheduleItem)
+│   ├── repositories/      (schedule_repository.dart, prefs_repository.dart)
+│   ├── seed/              (exercises.dart, meals.dart — hardcoded content)
+│   └── db/                (database_helper.dart)
+├── services/              (notification_service.dart, timer_service.dart)
+├── providers/             (theme_provider.dart, schedule_provider.dart, notification_settings_provider.dart)
+├── screens/
+│   ├── home_screen.dart   (bottom nav host)
+│   ├── training/
+│   ├── diet/
+│   ├── schedule/
+│   └── account/
+└── widgets/               (shared UI components)
+FEATURE 1: TRAINING TAB
+Purpose: Browse and perform exercises, filtered by muscle focus area.
+
+Data model (hardcoded in lib/data/seed/exercises.dart):
+
+dart
+class Exercise {
+  final String id;
+  final String name;
+  final String muscleGroup;     // e.g. Chest, Back, Legs, Arms, Core, Shoulders, Full Body
+  final String exerciseType;  // Gym, Cardio, Bodyweight, Stretching
+  final String equipment;       // e.g. "Bodyweight", "Dumbbell", "Machine", "Barbell"
+  final String gifAssetPath;    // e.g. "assets/gifs/chest_pushup.gif"
+  final String? youtubeUrl;     // optional
+  final String instructions;    // short text
+}
+Provide at least 40 sample exercises across all muscle groups as seed data. Use placeholder asset paths following the naming convention assets/gifs/{muscle}_{exercise}.gif — the user will populate real GIFs later.
+Why separate muscleGroup and exerciseType
+They are orthogonal dimensions — a "Chest" exercise can be "Gym" (bench press) or "Bodyweight" (push-up), and a "Full Body" exercise can be "Cardio" (burpees) or "Gym" (deadlift). Keeping them as two distinct string fields lets you:
+
+Filter independently: "show me Chest + Cardio" or "show me all Cardio".
+
+Combine later: a multi-select filter or a "Gym only" toggle.
+
+Extend without touching the other dimension — add Stretching as a type without re-tagging muscle groups
+UI:
+
+Top: horizontal scrollable chip filter row for muscle groups (All, Chest, Back, Legs, ...), plus a secondary filter for equipment (Bodyweight / Dumbbell / Machine).
+
+Below: grid or list of exercise cards showing name, muscle group, equipment, and a static thumbnail (first frame of GIF via Image.asset).
+
+Tapping an exercise opens a modal bottom sheet (use showModalBottomSheet with isScrollControlled: true) containing:
+
+The GIF (Image.asset, animating).
+Exercise name and instructions.
+A timer selector — default 30s, adjustable via a slider or preset chips (15s, 30s, 45s, 60s, 90s).
+A large "Start Training" button.
+When tapped: start a countdown displayed in the modal (large monospace text). On completion, fire a local notification ("Exercise complete — {name}") and show an in-app completion state (SnackBar + visual change in the modal).
+If youtubeUrl != null, a "Watch on YouTube" button that opens it via url_launcher (LaunchMode.externalApplication).
+Timer must use Dart's Timer.periodic or Stopwatch — no external timer packages.
+
+Critical: If the user backgrounds the app or dismisses the modal while the timer runs, the countdown must still complete and fire the notification. Schedule the completion notification via flutter_local_notifications with zonedSchedule at now + duration as a fallback, and cancel it if the modal timer completes normally while app is foreground.
+
+FEATURE 2: DIET TAB
+Purpose: Browse meal combinations filtered by calorie range.
+
+Data model (hardcoded in lib/data/seed/meals.dart):
+
+dart
+class Meal {
+  final String id;
+  final String name;
+  final int calories;           // total kcal
+  final String description;     // short text
+  final List<String> ingredients;
+  final String category;        // e.g. Breakfast, Lunch, Dinner, Snack
+}
+Provide at least 25 sample meals spanning ~300 to ~900 kcal.
+
+UI:
+
+Top: a calorie range filter — a RangeSlider (e.g. 0–1000 kcal) plus category chips (Breakfast / Lunch / Dinner / Snack / All).
+
+List of meal cards showing name, calories (prominent badge), category, and short description.
+
+Tapping a card opens a detail sheet/modal with full description, ingredients list, and calorie breakdown. No actions beyond viewing and dismissing.
+
+FEATURE 3: SCHEDULE TAB (CRUD + NOTIFICATIONS)
+Purpose: User creates weekly workout schedule entries. This is the only feature with persistent user data.
+
+SQLite schema (schedule_items table):
+
+text
+id           INTEGER PRIMARY KEY AUTOINCREMENT
+day_of_week  INTEGER NOT NULL        -- 1=Mon ... 7=Sun
+time_hour    INTEGER NOT NULL        -- 0-23
+time_minute  INTEGER NOT NULL        -- 0-59
+title        TEXT NOT NULL           -- e.g. "Leg Day"
+description  TEXT                    -- optional notes for that day
+created_at   INTEGER NOT NULL        -- epoch millis
+Use sqflite. Provide a ScheduleRepository with insert, update, delete, getAll, getByDay.
+
+UI:
+
+Grouped list by day of week, styled like a clock/alarm app — each day is a section header, entries below it are cards showing time (HH:mm) and title.
+
+FAB or top-right "+" button opens a Create Schedule form (full-screen dialog or bottom sheet):
+
+Day picker (dropdown or segmented buttons for Mon–Sun).
+
+Time picker (showTimePicker).
+
+Title text field (required).
+
+Description text field (multiline, optional).
+
+Save button.
+
+Tapping an existing schedule item opens the same form pre-filled in edit mode, with a Delete button (confirm with an AlertDialog before deleting).
+
+Notification scheduling:
+
+On create/update, schedule a repeating weekly notification via flutter_local_notifications zonedSchedule using DateTimeComponents.dayOfWeekAndTime, at the schedule time minus the user's reminder offset (see Account tab). Cancel and reschedule on edit.
+
+On delete, cancel the corresponding notification by ID (derive a stable notification ID from the DB row id).
+
+On app launch, resync all notifications from the DB (in case of reboots or permission changes).
+
+FEATURE 4: ACCOUNT TAB
+Purpose: App-level preferences only. No login, no sign out.
+
+Sections:
+
+Appearance — Light / Dark / System theme toggle. Persist via shared_preferences and apply immediately.
+
+Notifications —
+
+Master toggle to enable/disable all reminders (uses flutter_local_notifications + runtime POST_NOTIFICATIONS permission on Android 13+).
+
+Reminder lead-time selector: 30 min / 1 hr / 6 hr / 12 hr before workout. Default 1 hr. Persist this value and resync all scheduled notifications when changed.
+
+A note in the UI explaining that if permission is denied, reminders will not fire.
+
+About — App name, version, small static description. No "sign out" button.
+
+Handle the case where notification permission is denied: show a banner in the Schedule tab and a message in Account with a button to open system settings (openAppSettings from permission_handler, or a manual intent).
+
+ANDROID CONFIGURATION CHECKLIST (agent must do these)
+android/app/build.gradle (or .kts):
+
+Enable core library desugaring:
+
+gradle
+compileOptions {
+    coreLibraryDesugaringEnabled true
+}
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+}
+minSdkVersion must be at least 21 (recommend 23).
+
+android/app/src/main/AndroidManifest.xml:
+
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+Register flutter_local_notifications receivers for scheduled notifications and boot.
+
+Add the <queries> block for url_launcher (YouTube intent) per url_launcher docs.
+
+pubspec.yaml dependencies (minimum):
+
+yaml
+sqflite: ^2.3.0
+path: ^1.9.0
+path_provider: ^2.1.0
+provider: ^6.1.0
+shared_preferences: ^2.2.0
+flutter_local_notifications: ^17.0.0   # check latest
+timezone: ^0.9.0
+url_launcher: ^6.2.0
+permission_handler: ^11.0.0
+Declare the asset folder:
+
+yaml
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/gifs/
+Also add assets/gifs/.gitkeep (or a placeholder GIF) so the asset folder isn't empty — an empty declared asset directory causes a build error.
+
+Notification init: call flutterLocalNotificationsPlugin.initialize(...) in main() before runApp, and configure the timezone database (tz.initializeTimeZones() + set local location). Request POST_NOTIFICATIONS at first launch of the app via a permission gate, not on every start.
+
+Battery optimization / exact alarms: On Android 12+, exact alarms require the user to grant SCHEDULE_EXACT_ALARM. Handle gracefully — if not granted, fall back to inexact scheduling.
+
+UX / POLISH REQUIREMENTS
+Material 3 (useMaterial3: true), with a fitness-appropriate color seed (e.g. a teal/green "hydro" accent).
+
+All empty states must have a message + illustration/icon + action button (e.g. "No workouts scheduled yet — tap + to add one").
+
+All loading/error states handled (DB init failure, permission denied).
+
+No hardcoded magic strings in UI — centralize in a strings.dart or use constants.
+
+Consistent spacing/padding, rounded corners, subtle elevation on cards.
+
+The timer modal must have a visible "Cancel training" action that cancels the timer and its scheduled fallback notification.
+
+Accessibility: semantic labels on interactive elements, sufficient contrast, minimum 48dp touch targets.
+
+DELIVERABLES FROM THE AGENT
+The agent should produce, in order:
+
+Scaffolding: flutter create hydrofit, update pubspec.yaml, run flutter pub get, and confirm no analyzer errors.
+
+Data layer: models, seed data (40+ exercises, 25+ meals), SQLite helper, repositories.
+
+Services: notification service (with timezone + permission handling + resync), timer service.
+
+Providers for theme, schedule, and notification settings.
+
+Screens in this order: Home (bottom nav shell) → Training → Diet → Schedule → Account.
+
+Android config (manifest, gradle desugaring) applied early — the agent should do this before writing the notification service so it doesn't forget.
+
+A placeholder GIF in assets/gifs/test.gif (generate a tiny one or instruct the user to drop one in) to verify asset loading before the user downloads the full library.
+
+README at project root documenting: how to run, how to add new exercises/meals, how to name GIF files, and any known Android quirks.
+
+Final verification: run flutter analyze and flutter build apk --debug and resolve all errors before declaring done. Do not stop at "code written" — the app must build.
+
+CONSTRAINTS & NON-GOALS
+Do not add Firebase, Supabase, any cloud SDK, or analytics.
+
+Do not add authentication UI or logic.
+
+Do not target iOS, web, or desktop.
+
+Do not add video player packages (e.g. youtube_player_flutter) — use url_launcher only.
+
+Do not introduce state management beyond provider.
+
+Do not generate large binary assets (GIFs, videos) — use placeholders and instruct the user to populate assets/gifs/.
+
+HOW TO WORK THROUGH THIS
+Work feature-by-feature in the order listed above. After each feature, run flutter analyze, fix all issues, and confirm the app still builds. Ask the user for clarification only if a requirement is genuinely ambiguous — otherwise make reasonable decisions and document them in the README. At the end, present a summary of what was built, what the user must do next (add real GIFs, test on device, grant notification permission), and any known limitations.
