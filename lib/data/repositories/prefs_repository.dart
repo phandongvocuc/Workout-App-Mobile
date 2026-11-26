@@ -5,6 +5,11 @@ class PrefsRepository {
   static const String _keyThemeMode = 'theme_mode';
   static const String _keyNotificationsEnabled = 'notifications_enabled';
   static const String _keyReminderLeadMinutes = 'reminder_lead_minutes';
+  static const String _keyApiBaseUrl = 'api_base_url';
+  static const String _keyAuthToken = 'auth_token';
+  static const String _keyUserJson = 'auth_user_json';
+
+  static const String defaultApiBaseUrl = 'http://10.0.2.2:8080';
 
   final SharedPreferences _prefs;
 
@@ -55,7 +60,6 @@ class PrefsRepository {
   }
 
   // Reminder Lead Time (minutes)
-  // Options: 30 (30m), 60 (1h), 360 (6h), 720 (12h). Default: 60
   int getReminderLeadMinutes() {
     return _prefs.getInt(_keyReminderLeadMinutes) ?? 60;
   }
@@ -63,5 +67,34 @@ class PrefsRepository {
   Future<void> setReminderLeadMinutes(int minutes) async {
     await _prefs.setInt(_keyReminderLeadMinutes, minutes);
   }
-}
 
+  // Backend Server URL
+  String getApiBaseUrl() {
+    return _prefs.getString(_keyApiBaseUrl) ?? defaultApiBaseUrl;
+  }
+
+  Future<void> setApiBaseUrl(String url) async {
+    await _prefs.setString(_keyApiBaseUrl, url);
+  }
+
+  // Auth Session Persistence
+  String? getAuthToken() => _prefs.getString(_keyAuthToken);
+
+  Future<void> setAuthToken(String? token) async {
+    if (token == null) {
+      await _prefs.remove(_keyAuthToken);
+    } else {
+      await _prefs.setString(_keyAuthToken, token);
+    }
+  }
+
+  String? getUserJson() => _prefs.getString(_keyUserJson);
+
+  Future<void> setUserJson(String? json) async {
+    if (json == null) {
+      await _prefs.remove(_keyUserJson);
+    } else {
+      await _prefs.setString(_keyUserJson, json);
+    }
+  }
+}

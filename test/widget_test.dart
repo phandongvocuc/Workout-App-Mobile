@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrofit/core/strings.dart';
+import 'package:hydrofit/data/models/user_model.dart';
 import 'package:hydrofit/data/seed/exercises.dart';
 import 'package:hydrofit/data/seed/meals.dart';
 
@@ -31,11 +32,39 @@ void main() {
     expect(calories.any((c) => c >= 650), isTrue);
   });
 
-  test('App strings are non-empty', () {
+  test('App strings and branding are configured for HydroFit Gym & Fitness Center', () {
     expect(AppStrings.appName, 'HydroFit');
+    expect(AppStrings.businessName, 'HydroFit Gym & Fitness Center');
     expect(AppStrings.navTraining, isNotEmpty);
     expect(AppStrings.navDiet, isNotEmpty);
     expect(AppStrings.navSchedule, isNotEmpty);
     expect(AppStrings.navAccount, isNotEmpty);
+  });
+
+  test('UserModel parses JSON and detects admin vs user role', () {
+    final admin = UserModel.fromJson({
+      'id': 0,
+      'email': 'admin@hydrofit.com',
+      'fullName': 'HydroFit Administrator',
+      'role': 'ADMIN',
+      'active': true,
+    });
+    expect(admin.isAdmin, isTrue);
+    expect(admin.initials, 'HA');
+
+    final member = UserModel.fromJson({
+      'id': 1,
+      'email': 'member@hydrofit.com',
+      'fullName': 'Alex Rivera',
+      'membershipTier': 'HydroFit Pro',
+      'fitnessGoal': 'Muscle Gain',
+      'heightCm': 178.0,
+      'weightKg': 75.5,
+      'role': 'USER',
+      'active': true,
+    });
+    expect(member.isAdmin, isFalse);
+    expect(member.initials, 'AR');
+    expect(member.membershipTier, 'HydroFit Pro');
   });
 }
