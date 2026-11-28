@@ -35,6 +35,12 @@ public class AppUser {
     @Column(name = "weight_kg")
     private Double weightKg;
 
+    @Column
+    private Integer age;
+
+    @Column(length = 20)
+    private String gender;
+
     @Column(nullable = false, length = 20)
     private String role = "USER";
 
@@ -70,6 +76,12 @@ public class AppUser {
 
     public Double getWeightKg() { return weightKg; }
     public void setWeightKg(Double weightKg) { this.weightKg = weightKg; }
+
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }

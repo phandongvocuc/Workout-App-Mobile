@@ -98,6 +98,8 @@ public class AdminUserController {
         user.setMembershipTier(defaultIfBlank(request.membershipTier(), "Standard"));
         user.setHeightCm(request.heightCm());
         user.setWeightKg(request.weightKg());
+        user.setAge(request.age());
+        user.setGender(blankToNull(request.gender()));
         user.setRole(SessionService.ROLE_USER);
         user.setActive(request.active() == null || request.active());
 
@@ -140,6 +142,8 @@ public class AdminUserController {
         existing.setMembershipTier(defaultIfBlank(request.membershipTier(), "Standard"));
         existing.setHeightCm(request.heightCm());
         existing.setWeightKg(request.weightKg());
+        existing.setAge(request.age());
+        existing.setGender(blankToNull(request.gender()));
         if (request.active() != null) {
             existing.setActive(request.active());
         }

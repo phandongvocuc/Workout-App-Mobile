@@ -71,6 +71,8 @@ public class UserProfileController {
         }
         user.setHeightCm(request.heightCm());
         user.setWeightKg(request.weightKg());
+        user.setAge(request.age());
+        user.setGender(request.gender() == null || request.gender().isBlank() ? null : request.gender().trim());
         if (request.password() != null && !request.password().isBlank()) {
             user.setPassword(request.password());
         }

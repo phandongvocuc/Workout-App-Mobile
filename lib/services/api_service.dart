@@ -104,6 +104,8 @@ class ApiService {
     String? fitnessGoal,
     double? heightCm,
     double? weightKg,
+    int? age,
+    String? gender,
     String? password,
   }) async {
     final body = <String, dynamic>{
@@ -112,6 +114,8 @@ class ApiService {
       'fitnessGoal': fitnessGoal,
       'heightCm': heightCm,
       'weightKg': weightKg,
+      'age': age,
+      'gender': gender,
       if (password != null && password.isNotEmpty) 'password': password,
     };
 

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/health_calculator.dart';
 import '../../core/strings.dart';
 import '../../data/models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_settings_provider.dart';
 import '../../providers/schedule_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/health_metric_modal.dart';
 import 'edit_profile_dialog.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -216,6 +218,27 @@ class _AccountScreenState extends State<AccountScreen>
                         ),
                         Expanded(
                           child: _ProfileMetric(
+                            label: 'Age',
+                            value: user.age != null ? '${user.age} yrs' : '—',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ProfileMetric(
+                            label: 'Gender',
+                            value: (user.gender != null &&
+                                    user.gender!.isNotEmpty)
+                                ? user.gender!
+                                : '—',
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: _ProfileMetric(
                             label: 'Phone',
                             value: (user.phone != null && user.phone!.isNotEmpty)
                                 ? user.phone!
@@ -235,6 +258,22 @@ class _AccountScreenState extends State<AccountScreen>
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // SECTION 0B: HEALTH & DAILY TARGETS
+            _buildSectionHeader(
+              icon: Icons.monitor_heart_outlined,
+              title: 'Health & Daily Targets',
+              colorScheme: colorScheme,
+            ),
+            _HealthMetricsGrid(
+              metrics: HealthCalculator.computeAll(
+                heightCm: user.heightCm,
+                weightKg: user.weightKg,
+                age: user.age,
+                gender: user.gender,
               ),
             ),
             const SizedBox(height: 24),
@@ -640,6 +679,106 @@ class _ProfileMetric extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
       ],
+    );
+  }
+}
+
+class _HealthMetricsGrid extends StatelessWidget {
+  final List<HealthMetricResult> metrics;
+
+  const _HealthMetricsGrid({required this.metrics});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: metrics.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.32,
+      ),
+      itemBuilder: (context, index) {
+        final metric = metrics[index];
+        return Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => HealthMetricModal.show(context, metric),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: metric.accentColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          metric.icon,
+                          size: 18,
+                          color: metric.accentColor,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.7),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        metric.shortTitle,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        metric.formattedValue,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: metric.hasAllInputs
+                              ? metric.accentColor
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        metric.subtitle,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

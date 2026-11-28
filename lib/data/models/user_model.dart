@@ -7,6 +7,8 @@ class UserModel {
   final String? membershipTier;
   final double? heightCm;
   final double? weightKg;
+  final int? age;
+  final String? gender;
   final String role; // 'ADMIN' or 'USER'
   final bool active;
   final String? createdAt;
@@ -20,6 +22,8 @@ class UserModel {
     this.membershipTier,
     this.heightCm,
     this.weightKg,
+    this.age,
+    this.gender,
     required this.role,
     this.active = true,
     this.createdAt,
@@ -44,6 +48,8 @@ class UserModel {
       membershipTier: json['membershipTier'] as String?,
       heightCm: (json['heightCm'] as num?)?.toDouble(),
       weightKg: (json['weightKg'] as num?)?.toDouble(),
+      age: (json['age'] as num?)?.toInt(),
+      gender: json['gender'] as String?,
       role: (json['role'] as String?) ?? 'USER',
       active: (json['active'] as bool?) ?? true,
       createdAt: json['createdAt'] as String?,
@@ -60,6 +66,8 @@ class UserModel {
       'membershipTier': membershipTier,
       'heightCm': heightCm,
       'weightKg': weightKg,
+      'age': age,
+      'gender': gender,
       'role': role,
       'active': active,
       'createdAt': createdAt,
@@ -75,6 +83,8 @@ class UserModel {
     String? membershipTier,
     double? heightCm,
     double? weightKg,
+    int? age,
+    String? gender,
     String? role,
     bool? active,
     String? createdAt,
@@ -88,6 +98,8 @@ class UserModel {
       membershipTier: membershipTier ?? this.membershipTier,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
       role: role ?? this.role,
       active: active ?? this.active,
       createdAt: createdAt ?? this.createdAt,

@@ -23,13 +23,20 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     'Flexibility & Mobility',
   ];
 
+  static const List<String> _genderOptions = [
+    'Male',
+    'Female',
+  ];
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _heightController;
   late final TextEditingController _weightController;
+  late final TextEditingController _ageController;
   late final TextEditingController _passwordController;
   late String _selectedGoal;
+  String? _selectedGender;
   bool _isSaving = false;
   String? _error;
 
@@ -48,12 +55,23 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           ? widget.user.weightKg!.toStringAsFixed(1)
           : '',
     );
+    _ageController = TextEditingController(
+      text: widget.user.age != null ? widget.user.age.toString() : '',
+    );
     _passwordController = TextEditingController();
 
     final currentGoal = widget.user.fitnessGoal;
     _selectedGoal = (currentGoal != null && _goalOptions.contains(currentGoal))
         ? currentGoal
         : _goalOptions.first;
+
+    final currentGender = widget.user.gender;
+    if (currentGender != null) {
+      final matched = _genderOptions.where(
+        (g) => g.toLowerCase() == currentGender.trim().toLowerCase(),
+      );
+      _selectedGender = matched.isNotEmpty ? matched.first : null;
+    }
   }
 
   @override
@@ -62,6 +80,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     _phoneController.dispose();
     _heightController.dispose();
     _weightController.dispose();
+    _ageController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -77,6 +96,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
     try {
       final height = double.tryParse(_heightController.text.trim());
       final weight = double.tryParse(_weightController.text.trim());
+      final age = int.tryParse(_ageController.text.trim());
 
       await context.read<AuthProvider>().updateProfile(
             fullName: _nameController.text.trim(),
@@ -84,6 +104,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             fitnessGoal: _selectedGoal,
             heightCm: height,
             weightKg: weight,
+            age: age,
+            gender: _selectedGender,
             password: _passwordController.text.isEmpty
                 ? null
                 : _passwordController.text,
@@ -183,6 +205,45 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                           labelText: 'Weight (kg)',
                           border: OutlineInputBorder(),
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _ageController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Age',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null;
+                          final parsed = int.tryParse(v.trim());
+                          if (parsed == null || parsed < 10 || parsed > 120) {
+                            return '10–120';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _selectedGender,
+                        decoration: const InputDecoration(
+                          labelText: 'Gender',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _genderOptions
+                            .map(
+                              (g) => DropdownMenuItem(value: g, child: Text(g)),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => _selectedGender = v),
                       ),
                     ),
                   ],

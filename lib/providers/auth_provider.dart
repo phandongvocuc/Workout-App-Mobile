@@ -95,6 +95,8 @@ class AuthProvider extends ChangeNotifier {
     String? fitnessGoal,
     double? heightCm,
     double? weightKg,
+    int? age,
+    String? gender,
     String? password,
   }) async {
     if (_token == null) {
@@ -107,6 +109,8 @@ class AuthProvider extends ChangeNotifier {
       fitnessGoal: fitnessGoal,
       heightCm: heightCm,
       weightKg: weightKg,
+      age: age,
+      gender: gender,
       password: password,
     );
     _currentUser = updated;

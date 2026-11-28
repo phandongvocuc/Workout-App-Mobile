@@ -22,6 +22,8 @@ public class AuthDtos {
             String membershipTier,
             Double heightCm,
             Double weightKg,
+            Integer age,
+            String gender,
             String role,
             boolean active,
             Instant createdAt
@@ -36,6 +38,8 @@ public class AuthDtos {
                     u.getMembershipTier(),
                     u.getHeightCm(),
                     u.getWeightKg(),
+                    u.getAge(),
+                    u.getGender(),
                     u.getRole(),
                     u.isActive(),
                     u.getCreatedAt()
@@ -50,6 +54,8 @@ public class AuthDtos {
                     null,
                     null,
                     "Admin",
+                    null,
+                    null,
                     null,
                     null,
                     "ADMIN",
@@ -74,6 +80,8 @@ public class AuthDtos {
             String membershipTier,
             Double heightCm,
             Double weightKg,
+            Integer age,
+            String gender,
             Boolean active
     ) {}
 
@@ -83,6 +91,8 @@ public class AuthDtos {
             String fitnessGoal,
             Double heightCm,
             Double weightKg,
+            Integer age,
+            String gender,
             String password
     ) {}
 }
